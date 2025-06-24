@@ -516,86 +516,76 @@ const FeedbackGiven = () => {
         </div>
       )}
 
-      {/* View Feedback Modal */}
-      {viewFeedbackModal.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/30 backdrop-blur-sm overflow-y-auto">
-          <div 
-            ref={viewFeedbackModalRef}
-            className="bg-white rounded-lg p-6 w-full max-w-2xl shadow-xl transform transition-all my-20"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
-                Feedback for {viewFeedbackModal.employeeName}
-              </h3>
-              <button
-                type="button"
-                onClick={closeViewFeedbackModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              {viewFeedbackModal.feedbacks.map((feedback) => (
-                <div key={feedback.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm font-medium text-gray-500">
-                      {new Date(feedback.date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </span>
-                    <button
-                      type="button"
-                      className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                    >
-                      Edit
-                    </button>
+     {/* View Feedback Modal */}
+    {viewFeedbackModal.isOpen && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/30 backdrop-blur-sm overflow-y-auto">
+        <div 
+          ref={viewFeedbackModalRef}
+          className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 shadow-xl transform transition-all my-8 max-h-[calc(100vh-4rem)] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex justify-between items-center mb-4 bg-white pb-4">
+            <h3 className="text-lg font-medium text-gray-900">
+              Feedback for {viewFeedbackModal.employeeName}
+            </h3>
+            <button
+              type="button"
+              onClick={closeViewFeedbackModal}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            {viewFeedbackModal.feedbacks.map((feedback) => (
+              <div key={feedback.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-sm font-medium text-gray-500">
+                    {new Date(feedback.date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </span>
+                  <button
+                    type="button"
+                    className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                  >
+                    Edit
+                  </button>
+                </div>
+                
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-1">Strengths</h4>
+                    <p className="text-sm text-gray-600">{feedback.strengths}</p>
                   </div>
                   
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-1">Strengths</h4>
-                      <p className="text-sm text-gray-600">{feedback.strengths}</p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-1">Areas to Improve</h4>
-                      <p className="text-sm text-gray-600">{feedback.areasToImprove}</p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-1">Overall Sentiment</h4>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        feedback.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
-                        feedback.sentiment === 'neutral' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {feedback.sentiment.charAt(0).toUpperCase() + feedback.sentiment.slice(1)}
-                      </span>
-                    </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-1">Areas to Improve</h4>
+                    <p className="text-sm text-gray-600">{feedback.areasToImprove}</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-1">Overall Sentiment</h4>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      feedback.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
+                      feedback.sentiment === 'neutral' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {feedback.sentiment.charAt(0).toUpperCase() + feedback.sentiment.slice(1)}
+                    </span>
                   </div>
                 </div>
-              ))}
-            </div>
-            
-            <div className="flex justify-end mt-6">
-              <button
-                type="button"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
-                onClick={closeViewFeedbackModal}
-              >
-                Close
-              </button>
-            </div>
+              </div>
+            ))}
           </div>
         </div>
-      )}
+      </div>
+    )}
     </>
   );
 };
