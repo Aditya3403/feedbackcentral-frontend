@@ -1,5 +1,5 @@
 "use client"
-
+import ProtectedRoute from '../../../../auth/ProtectedRoute';
 import { useState } from 'react';
 import { Check, Trash2 } from 'lucide-react';
 import {
@@ -102,6 +102,7 @@ const FeedbackReceived = () => {
   };
 
   return (
+    <ProtectedRoute>
     <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-200">
       <h2 className="text-xl font-semibold mb-6">Feedback Received</h2>
       
@@ -182,6 +183,7 @@ const FeedbackReceived = () => {
         </div>
       )}
     </div>
+    </ProtectedRoute>
   );
 };
 

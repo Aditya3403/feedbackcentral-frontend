@@ -1,5 +1,10 @@
+"use client"
+
+import ProtectedRoute from '../../auth/ProtectedRoute';
+import { useAppStore } from '../../store/useAppStore';
+
 export default function DashboardPage() {
-  // Mock data - replace with real data from your backend/context
+  const { login, signup, logout, user } = useAppStore();
   const username = "John Doe";
   const totalFeedbacks = 24;
   const unreadFeedbacks = 5;
@@ -9,11 +14,13 @@ export default function DashboardPage() {
     { id: 3, from: "Colleague", date: "3 days ago", preview: "Your documentation was very helpful..." },
   ];
 
+  console.log("USER:",user)
   return (
+    <ProtectedRoute>
     <div className="space-y-6">
       {/* Welcome Message */}
       <div>
-        <p className="text-lg mt-1">Welcome back, {username}!</p>
+        <p className="text-lg mt-1">Welcome back, {user.full_name}!</p>
       </div>
 
       {/* Stats Boxes */}
@@ -52,5 +59,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

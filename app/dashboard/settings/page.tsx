@@ -1,23 +1,17 @@
 "use client"
-
+import ProtectedRoute from '../../../auth/ProtectedRoute';
 import { useState } from 'react';
 import { User, Mail, Briefcase, ChevronDown, Hotel, Lock, Key } from 'lucide-react';
+import { useAppStore } from '../../../store/useAppStore';
 
 const SettingsPage = () => {
+  const { login, signup, logout, user } = useAppStore();
   const [activeTab, setActiveTab] = useState('user-info');
   const [isEditing, setIsEditing] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: ''
   });
-
-  // User data - replace with actual user data from context/API
-  const user = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    company: 'Acme Corporation',
-    role: 'manager', // or 'employee'
-  };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -28,6 +22,7 @@ const SettingsPage = () => {
   };
 
   return (
+    <ProtectedRoute>
     <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-200">
       <h1 className="text-2xl font-semibold mb-6">Settings</h1>
       
@@ -70,11 +65,11 @@ const SettingsPage = () => {
               {isEditing ? (
                 <input
                   type="text"
-                  defaultValue={user.name}
+                  defaultValue={user.full_name}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
                 />
               ) : (
-                <p className="text-gray-900">{user.name}</p>
+                <p className="text-gray-900">{user.full_name}</p>
               )}
             </div>
 
@@ -108,9 +103,9 @@ const SettingsPage = () => {
             <div className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
                 <Briefcase className="w-5 h-5 text-gray-500" />
-                <label className="text-sm font-medium text-gray-700">Role</label>
+                <label className="text-sm font-medium text-gray-700">Department</label>
               </div>
-              <p className="text-gray-900 capitalize">{user.role}</p>
+              <p className="text-gray-900 capitalize">{user.department}</p>
             </div>
           </div>
         </div>
@@ -136,7 +131,7 @@ const SettingsPage = () => {
                   type="password"
                   id="currentPassword"
                   name="currentPassword"
-                  value={passwordData.currentPassword}
+                  value={user.currentPassword}
                   onChange={handlePasswordChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
                   placeholder="Enter current password"
@@ -176,6 +171,7 @@ const SettingsPage = () => {
         </div>
       )}
     </div>
+    </ProtectedRoute>
   );
 };
 

@@ -3,16 +3,28 @@
 import { Home, NotebookPen, ChevronLeft, User, Settings, ChevronDown, ChevronUp, LogOut, Moon, Sun } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useAppStore } from '../store/useAppStore';
 
 const SIDEBAR_WIDTH = 280;
 const SIDEBAR_COLLAPSED_WIDTH = 72;
 
 const SideBar = () => {
+  const { login, signup, logout, user } = useAppStore();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [feedbackExpanded, setFeedbackExpanded] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
 
+  const getUserInitials = (fullName: string) => {
+    const names = fullName.split(' ');
+    let initials = names[0].charAt(0).toUpperCase();
+    
+    if (names.length > 1) {
+      initials += names[names.length - 1].charAt(0).toUpperCase();
+    }
+    
+    return initials;
+  };
   // Navigation items
   const navItems = [
     {
@@ -40,13 +52,6 @@ const SideBar = () => {
       icon: <Settings className="w-6 h-6" />,
     },
   ];
-
-  // Mock user data
-  const user = {
-    name: "John Doe",
-    email: "john@example.com",
-    avatar: "/default-avatar.png"
-  };
 
   const toggleFeedback = () => {
     setFeedbackExpanded(!feedbackExpanded);
@@ -93,7 +98,7 @@ const SideBar = () => {
                 className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 aria-label="Expand sidebar"
               >
-                <span className="text-xl font-bold text-gray-900 dark:text-white">R</span>
+                <span className="text-xl font-bold text-gray-900 dark:text-white">FC</span>
               </button>
             )}
             
@@ -175,10 +180,16 @@ const SideBar = () => {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                    <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                    {user?.full_name ? (
+                      <span className="font-medium text-gray-700 dark:text-gray-300">
+                        {getUserInitials(user.full_name)}
+                      </span>
+                    ) : (
+                      <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                    )}
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.name}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.full_name}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
                   </div>
                 </div>
@@ -191,10 +202,16 @@ const SideBar = () => {
                   <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                        <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                        {user?.full_name ? (
+                          <span className="font-medium text-gray-700 dark:text-gray-300">
+                            {getUserInitials(user.full_name)}
+                          </span>
+                        ) : (
+                          <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                        )}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{user.full_name}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
                       </div>
                     </div>
