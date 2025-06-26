@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { X } from "lucide-react";
 import { useRouter } from 'next/navigation'; 
 import { useAppStore } from '../store/useAppStore';
@@ -28,13 +28,13 @@ interface EmployeeSignupData {
 
 const Navbar = () => {
   const router = useRouter();
-  const { login, signup, logout, user } = useAppStore();
+  const { login, signup, logout, user, token  } = useAppStore();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [userType, setUserType] = useState<'manager' | 'employee'>('manager');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  const isAuthenticated = !!token;
   // Form state
   const [loginData, setLoginData] = useState<LoginData>({
     email: '',
@@ -57,7 +57,11 @@ const Navbar = () => {
     password: ''
   });
 
-// Updated handleLogin function
+
+  const handleDashboardClick = () => {
+    router.push('/dashboard');
+  };
+
  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -114,12 +118,51 @@ const Navbar = () => {
           </div>
         </div>
         <div>
-          <button
-            onClick={() => setShowAuthModal(true)}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-          >
-            Login
-          </button>
+          {isAuthenticated ? (
+            <div className="flex items-center gap-4">
+              <div className="relative group">
+                <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors">
+                  <span className="hidden sm:inline">Welcome, {user?.full_name}</span>
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    className="h-4 w-4" 
+                    viewBox="0 0 20 20" 
+                    fill="currentColor"
+                  >
+                    <path 
+                      fillRule="evenodd" 
+                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" 
+                      clipRule="evenodd" 
+                    />
+                  </svg>
+                </button>
+                
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200">
+                  <div className="py-1">
+                    <button
+                      onClick={() => router.push('/dashboard')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
+                    >
+                      Dashboard
+                    </button>
+                    <button
+                      onClick={logout}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+            >
+              Login
+            </button>
+          )}
         </div>
       </nav>
 

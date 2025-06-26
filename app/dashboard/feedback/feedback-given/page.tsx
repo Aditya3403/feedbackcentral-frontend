@@ -18,6 +18,7 @@ type TeamMember = {
   email: string;
   feedback: string;
   feedback_count: number;
+  status: string
 };
 
 type Feedback = {
@@ -26,10 +27,12 @@ type Feedback = {
   strengths: string;
   areasToImprove: string;
   sentiment: 'positive' | 'neutral' | 'negative';
+  status: 'pending' | 'acknowledged'; 
 };
 
 const FeedbackGiven = () => {
-  const { user } = useAppStore();
+  const { user, userType } = useAppStore();
+  const isManager = userType === 'manager';
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,13 +62,15 @@ const FeedbackGiven = () => {
     try {
       setIsLoading(true);
       const response = await axios.get(`http://127.0.0.1:8000/api/auth/get-employees?manager_id=${user?.id}`);
+      console.log("R", response)
       if (response.data.success) {
         setTeamMembers(response.data.employees.map((emp: any) => ({
           id: emp.id.toString(),
           name: emp.full_name,
           email: emp.email,
           feedback: `${emp.feedback_count || 0} Given`,
-          feedback_count: emp.feedback_count || 0
+          feedback_count: emp.feedback_count || 0,
+          status: emp.feedback_status
         })));
       }
     } catch (error) {
@@ -108,38 +113,34 @@ const FeedbackGiven = () => {
     });
   }, []);
 
-  const openViewFeedbackModal = useCallback((employeeName: string) => {
-    // Static data for demonstration
-    const staticFeedbacks: Feedback[] = [
-      {
-        id: '1',
-        date: '2023-05-15',
-        strengths: 'Excellent communication skills and team collaboration.',
-        areasToImprove: 'Could work on time management for tight deadlines.',
-        sentiment: 'positive'
-      },
-      {
-        id: '2',
-        date: '2023-03-22',
-        strengths: 'Very creative problem solver with innovative ideas.',
-        areasToImprove: 'Needs to improve documentation of work processes.',
-        sentiment: 'neutral'
-      },
-      {
-        id: '3',
-        date: '2023-01-10',
-        strengths: 'Strong technical skills and quick learner.',
-        areasToImprove: 'Should participate more in team meetings.',
-        sentiment: 'positive'
-      }
-    ];
-    
-    setViewFeedbackModal({
-      isOpen: true,
-      employeeName,
-      feedbacks: staticFeedbacks
-    });
-  }, []);
+  const openViewFeedbackModal = useCallback(async (employeeId: string, employeeName: string) => {
+  try {
+    setIsLoading(true);
+    const response = await axios.get(`http://127.0.0.1:8000/api/auth/manager-feedbacks/${user?.id}?employee_id=${employeeId}`);
+    console.log(response)
+    if (response.data) {
+      const feedbacks = response.data.map((fb: any) => ({
+        id: fb.id.toString(),
+        date: fb.created_at.split('T')[0], // Format date
+        strengths: fb.strengths,
+        areasToImprove: fb.areas_to_improve,
+        sentiment: fb.overall_sentiment.toLowerCase() as 'positive' | 'neutral' | 'negative',
+        status: fb.feedback_status || 'pending'
+      }));
+      
+      setViewFeedbackModal({
+        isOpen: true,
+        employeeName,
+        feedbacks
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching feedbacks:', error);
+    toast.error('Failed to load feedbacks');
+  } finally {
+    setIsLoading(false);
+  }
+}, [user?.id]);
 
   const closeViewFeedbackModal = useCallback(() => {
     setViewFeedbackModal({
@@ -177,35 +178,48 @@ const FeedbackGiven = () => {
     }
   }, [closeModal, user?.id, fetchEmployees]);
 
-  // Handle form submission for feedback
-  const handleFeedbackSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const strengths = formData.get('strengths') as string;
-    const areasToImprove = formData.get('areasToImprove') as string;
-    const sentiment = formData.get('sentiment') as 'positive' | 'neutral' | 'negative';
 
-    try {
-      const response = await axios.post('http://127.0.0.1:8000/api/auth/submit-feedback', {
-        manager_id: user?.id,
-        employee_id: feedbackModal.employeeId,
-        strengths,
-        areasToImprove: areasToImprove,
-        sentiment
-      });
+const handleFeedbackSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  const formData = new FormData(e.currentTarget);
+  const strengths = formData.get('strengths') as string;
+  const areasToImprove = formData.get('areasToImprove') as string;
+  const sentiment = formData.get('sentiment') as string;
 
-      if (response.data.success) {
-        toast.success('Feedback submitted successfully!');
-        await fetchEmployees();
-        closeFeedbackModal();
-      }
-    } catch (error) {
-      console.error('Error submitting feedback:', error);
-      toast.error('Failed to submit feedback. Please try again.');
+  // Ensure sentiment is always uppercase to match backend enum
+  const uppercaseSentiment = sentiment.toUpperCase();
+  
+  // Validate the sentiment value
+  const validSentiments = ['POSITIVE', 'NEUTRAL', 'NEGATIVE'];
+  if (!validSentiments.includes(uppercaseSentiment)) {
+    toast.error('Invalid sentiment value');
+    return;
+  }
+
+  try {
+    setIsLoading(true);
+    const response = await axios.post('http://127.0.0.1:8000/api/auth/submit-feedback', {
+      manager_id: user?.id,
+      employee_id: feedbackModal.employeeId,
+      strengths,
+      areas_to_improve: areasToImprove,
+      overall_sentiment: uppercaseSentiment,
+      date: new Date().toISOString().split('T')[0]
+    });
+
+    if (response.data.success) {
+      toast.success('Feedback submitted successfully!');
+      closeFeedbackModal();
+      await fetchEmployees();
     }
-  }, [feedbackModal.employeeId, user?.id, fetchEmployees, closeFeedbackModal]);
+  } catch (error) {
+    console.error('Error submitting feedback:', error);
+    toast.error('Failed to submit feedback. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+}, [feedbackModal.employeeId, user?.id, fetchEmployees, closeFeedbackModal]);
 
-  // Handle escape key and outside clicks
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -252,6 +266,19 @@ const FeedbackGiven = () => {
       header: 'Feedback Count',
     },
     {
+    id: 'acknowledged',
+    header: 'Acknowledged',
+    cell: ({ row }) => (
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+        row.original.status === 'ACKNOWLEDGED' 
+          ? 'bg-green-100 text-green-800' 
+          : 'bg-gray-100 text-gray-800'
+      }`}>
+        {row.original.status === 'ACKNOWLEDGED' ? 'Yes' : 'No'}
+      </span>
+    ),
+  },
+    {
       id: 'actions',
       header: 'Actions',
       cell: ({ row }) => (
@@ -259,7 +286,7 @@ const FeedbackGiven = () => {
           <button
             type="button"
             className="text-indigo-600 hover:text-indigo-800 p-1 rounded-md hover:bg-indigo-50 transition-colors"
-            onClick={() => openViewFeedbackModal(row.original.name)}
+            onClick={() => openViewFeedbackModal(row.original.id, row.original.name)}
           >
             <Eye size={16} />
           </button>
@@ -272,7 +299,7 @@ const FeedbackGiven = () => {
           </button>
         </div>
       ),
-    },
+    }
   ];
 
   const table = useReactTable({
@@ -283,84 +310,93 @@ const FeedbackGiven = () => {
 
   return (
     <>
-      <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-200 relative">
-        {/* Main Content */}
-        <div className="flex justify-between items-start mb-6">
-          <h2 className="text-xl font-semibold">Feedback Given</h2>
-          <button
-            type="button"
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-            onClick={openModal}
-          >
-            <Plus size={16} />
-            Add Person
-          </button>
-        </div>
+       {isManager ? (
+        <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-200 relative">
+          {/* Main Content */}
+          <div className="flex justify-between items-start mb-6">
+            <h2 className="text-xl font-semibold">Feedback Given</h2>
+            <button
+              type="button"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              onClick={openModal}
+            >
+              <Plus size={16} />
+              Add Person
+            </button>
+          </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="flex items-center gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
-              <div className="px-3 py-2 bg-gray-50 rounded-md border border-gray-200 text-sm text-gray-700">
-                {companyName}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="flex items-center gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                <div className="px-3 py-2 bg-gray-50 rounded-md border border-gray-200 text-sm text-gray-700">
+                  {companyName}
+                </div>
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-              <div className="px-3 py-2 bg-gray-50 rounded-md border border-gray-200 text-sm text-gray-700">
-                {department}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                <div className="px-3 py-2 bg-gray-50 rounded-md border border-gray-200 text-sm text-gray-700">
+                  {department}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {isLoading ? (
-          <div className="flex justify-center items-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto border border-gray-200 rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <th
-                          key={header.id}
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {table.getRowModel().rows.map((row) => (
-                    <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                      {row.getVisibleCells().map((cell) => (
-                        <td
-                          key={cell.id}
-                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {isLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
             </div>
-
-            {teamMembers.length === 0 && !isLoading && (
-              <div className="text-center py-8 text-gray-500">
-                No team members found. Add members to get started.
+          ) : (
+            <>
+              <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <tr key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <th
+                            key={header.id}
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                          </th>
+                        ))}
+                      </tr>
+                    ))}
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {table.getRowModel().rows.map((row) => (
+                      <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                        {row.getVisibleCells().map((cell) => (
+                          <td
+                            key={cell.id}
+                            className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )}
-          </>
-        )}
-      </div>
+
+              {teamMembers.length === 0 && !isLoading && (
+                <div className="text-center py-8 text-gray-500">
+                  No team members found. Add members to get started.
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="text-center py-12">
+            <p className="text-gray-700 text-lg">You don't have permission to write feedback</p>
+            <p className="text-gray-500 mt-2">Only managers can access this feature</p>
+          </div>
+        </div>
+      )}
 
       {/* Add Employee Modal */}
       {isModalOpen && (
@@ -506,9 +542,18 @@ const FeedbackGiven = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                  disabled={isLoading}
                 >
-                  Submit Feedback
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Submitting...
+                    </>
+                  ) : 'Submit Feedback'}
                 </button>
               </div>
             </form>
