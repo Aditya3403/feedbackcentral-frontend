@@ -4,6 +4,7 @@ import { useState,useEffect } from "react";
 import { X } from "lucide-react";
 import { useRouter } from 'next/navigation'; 
 import { useAppStore } from '../store/useAppStore';
+import { useAppContext } from '../context/useAppContext';
 
 interface LoginData {
   email: string;
@@ -29,13 +30,16 @@ interface EmployeeSignupData {
 const Navbar = () => {
   const router = useRouter();
   const { login, signup, logout, user, token  } = useAppStore();
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const { 
+    showAuthModal, 
+    setShowAuthModal,
+  } = useAppContext();
   const [isLogin, setIsLogin] = useState(true);
   const [userType, setUserType] = useState<'manager' | 'employee'>('manager');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isAuthenticated = !!token;
-  // Form state
+
   const [loginData, setLoginData] = useState<LoginData>({
     email: '',
     password: ''
@@ -111,10 +115,10 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="w-full flex items-center justify-between p-4 border-b border-gray-200">
+      <nav className="bg-white w-full flex items-center justify-between p-4 border-b border-gray-200">
         <div className="flex items-center">
-          <div className="h-8 w-32 bg-indigo-600 rounded flex items-center justify-center">
-            <span className="text-white font-semibold text-sm">Feedback Central</span>
+          <div className="h-8 w-40 flex items-center justify-center">
+            <span className="text-black font-semibold text-lg">Feedback Central</span>
           </div>
         </div>
         <div>

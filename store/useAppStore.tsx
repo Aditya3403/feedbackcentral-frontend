@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 interface AppState {
   user: any;
@@ -21,7 +22,7 @@ export const useAppStore = create<AppState>()(
       token: null,
       userType: null,
       login: async (email, password) => {
-        const response = await fetch('http://127.0.0.1:8000/api/auth/login', {
+        const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -43,8 +44,8 @@ export const useAppStore = create<AppState>()(
       },
       signup: async (userData, isManager) => {
         const endpoint = isManager 
-          ? 'http://127.0.0.1:8000/api/auth/signup/manager' 
-          : 'http://127.0.0.1:8000/api/auth/signup/employee';
+          ? `${BACKEND_URL}/api/auth/signup/manager` 
+          : `${BACKEND_URL}/api/auth/signup/employee`;
 
         try {
           const response = await fetch(endpoint, {

@@ -25,16 +25,17 @@ const SideBar = () => {
     
     return initials;
   };
-  // Navigation items
+
+  // Navigation items with consistent icon sizing
   const navItems = [
     {
       label: "Home",
       path: "/dashboard",
-      icon: <Home className="w-6 h-6" />,
+      icon: <Home className="w-5 h-5" />,
     },
     {
       label: "Feedback",
-      icon: <NotebookPen className="w-6 h-6" />,
+      icon: <NotebookPen className="w-5 h-5" />,
       subItems: [
         {
           label: "Feedback Given",
@@ -49,7 +50,7 @@ const SideBar = () => {
     {
       label: "Settings",
       path: "/dashboard/settings",
-      icon: <Settings className="w-6 h-6" />,
+      icon: <Settings className="w-5 h-5" />,
     },
   ];
 
@@ -61,15 +62,9 @@ const SideBar = () => {
     setUserMenuOpen(!userMenuOpen);
   };
 
-  const toggleTheme = () => {
-    setDarkMode(!darkMode);
-    // Implement your theme switching logic here
-    document.documentElement.classList.toggle('dark', !darkMode);
-  };
-
   const handleLogout = () => {
-    // Implement your logout logic here
     console.log('User logged out');
+    logout()
   };
 
   return (
@@ -113,19 +108,21 @@ const SideBar = () => {
             )}
           </div>
 
-          {/* Navigation links */}
-          <nav className="flex flex-col space-y-2">
+          {/* Navigation links with consistent icon sizing */}
+          <nav className="flex flex-col space-y-1">
             {navItems.map((item) => (
               <div key={item.label}>
                 {item.path ? (
                   <Link
                     href={item.path}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all no-underline ${
-                      sidebarCollapsed ? "justify-center" : ""
+                    className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all no-underline ${
+                      sidebarCollapsed ? "justify-center px-0" : ""
                     } text-black dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700`}
                     style={{ textDecoration: 'none' }}
                   >
-                    {item.icon}
+                    <span className={`flex items-center justify-center ${sidebarCollapsed ? "w-10" : ""}`}>
+                      {item.icon}
+                    </span>
                     {!sidebarCollapsed && (
                       <span className="text-lg">{item.label}</span>
                     )}
@@ -134,12 +131,14 @@ const SideBar = () => {
                   <>
                     <button
                       onClick={toggleFeedback}
-                      className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg transition-all ${
-                        sidebarCollapsed ? "justify-center" : ""
+                      className={`flex items-center justify-between w-full px-3 py-3 rounded-lg transition-all ${
+                        sidebarCollapsed ? "justify-center px-0" : ""
                       } text-black dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700`}
                     >
                       <div className="flex items-center gap-3">
-                        {item.icon}
+                        <span className={`flex items-center justify-center ${sidebarCollapsed ? "w-10" : ""}`}>
+                          {item.icon}
+                        </span>
                         {!sidebarCollapsed && (
                           <span className="text-lg">{item.label}</span>
                         )}
@@ -218,22 +217,6 @@ const SideBar = () => {
                   </div>
                   <div className="p-2">
                     <button
-                      onClick={toggleTheme}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      {darkMode ? (
-                        <>
-                          <Sun className="w-5 h-5" />
-                          <span>Light Mode</span>
-                        </>
-                      ) : (
-                        <>
-                          <Moon className="w-5 h-5" />
-                          <span>Dark Mode</span>
-                        </>
-                      )}
-                    </button>
-                    <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                     >
@@ -247,7 +230,7 @@ const SideBar = () => {
           ) : (
             <div className="p-4 flex justify-center">
               <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                {getUserInitials(user.full_name)}
               </div>
             </div>
           )}

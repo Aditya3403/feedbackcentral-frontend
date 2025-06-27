@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 export default function SetPassword() {
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -33,7 +34,7 @@ export default function SetPassword() {
 
     try {
       setLoading(true);
-      const response = await axios.post('http://127.0.0.1:8000/api/auth/set-password', {
+      const response = await axios.post(`${BACKEND_URL}/api/auth/set-password`, {
         token,
         new_password: formData.newPassword,
         confirm_password: formData.confirmPassword

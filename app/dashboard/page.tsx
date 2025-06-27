@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { Check, Trash2, Eye, X } from 'lucide-react';
 
 export default function DashboardPage() {
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
   const { user, token, userType } = useAppStore();
   const [isLoading, setIsLoading] = useState(true);
   const [totalFeedbacks, setTotalFeedbacks] = useState(0);
@@ -24,9 +25,9 @@ export default function DashboardPage() {
       let endpoint = '';
       
       if (userType === 'manager') {
-        endpoint = `http://127.0.0.1:8000/api/auth/manager-feedbacks/${user?.id}`;
+        endpoint = `${BACKEND_URL}/api/auth/manager-feedbacks/${user?.id}`;
       } else {
-        endpoint = `http://127.0.0.1:8000/api/auth/received-feedback/${user?.id}`;
+        endpoint = `${BACKEND_URL}/api/auth/received-feedback/${user?.id}`;
       }
 
       const response = await axios.get(endpoint);
@@ -80,14 +81,11 @@ export default function DashboardPage() {
   return (
     <ProtectedRoute>
       <div className="space-y-6">
-        {/* Welcome Message */}
         <div>
           <h1 className="text-2xl font-bold">Welcome back, {user?.full_name}!</h1>
         </div>
 
-        {/* Stats Boxes */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Total Feedbacks */}
           <div className="bg-transparent border border-gray-200 rounded-lg p-4">
             <h2 className="text-lg font-semibold text-gray-700">Total Feedbacks</h2>
             <p className="text-3xl font-bold mt-2 text-indigo-600">
@@ -95,54 +93,46 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Unread Feedbacks */}
-          <div className="bg-transparent border border-gray-200 rounded-lg p-4">
-            <h2 className="text-lg font-semibold text-gray-700">Unread Feedbacks</h2>
-            <p className="text-3xl font-bold mt-2 text-red-500">
-              {isLoading ? '--' : unreadFeedbacks}
-            </p>
-          </div>
         </div>
 
         {/* Recent Feedbacks */}
         <h2 className="text-xl font-semibold mb-4">Recent Feedbacks</h2>
         <div className="bg-transparent border border-gray-200 rounded-lg p-6">
-          
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-            </div>
-          ) : recentFeedbacks.length > 0 ? (
-            <div className="space-y-4">
-              {recentFeedbacks.map((feedback: any) => (
-                <div key={feedback.id} className="border-b border-gray-100 pb-4 last:border-0">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium">
-                        {userType === 'manager' ? 'You' : `${feedback.managerName} [Manager]`}
-                      </h3>
-                      <p className="text-gray-600 text-sm">{feedback.date}</p>
-                    </div>
-                    <button 
-                      className="text-sm text-indigo-600 hover:text-indigo-800"
-                      onClick={() => openFeedbackModal(feedback)}
-                    >
-                      <Eye size={18} />
-                    </button>
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          </div>
+        ) : recentFeedbacks.length > 0 ? (
+          <div className="space-y-4 overflow-y-auto" style={{ maxHeight: '400px' }}>
+            {recentFeedbacks.slice(0, 3).map((feedback: any) => (
+              <div key={feedback.id} className="border-b border-gray-100 pb-4 last:border-0">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-medium">
+                      {userType === 'manager' ? 'You' : `${feedback.managerName} [Manager]`}
+                    </h3>
+                    <p className="text-gray-600 text-sm">{feedback.date}</p>
                   </div>
-                  <div className="mt-2">
-                    <h4 className="font-medium text-gray-700">Preview:</h4>
-                    <p className="text-gray-700 line-clamp-2">
-                      {feedback.strengths.substring(0, 100)}...
-                    </p>
-                  </div>
+                  <button 
+                    className="text-sm text-indigo-600 hover:text-indigo-800"
+                    onClick={() => openFeedbackModal(feedback)}
+                  >
+                    <Eye size={18} />
+                  </button>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 py-4">No recent feedbacks found</p>
-          )}
-        </div>
+                <div className="mt-2">
+                  <h4 className="font-medium text-gray-700">Preview:</h4>
+                  <p className="text-gray-700 line-clamp-2">
+                    {feedback.strengths.substring(0, 100)}...
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500 py-4">No recent feedbacks found</p>
+        )}
+      </div>
       </div>
 
       {/* Feedback Detail Modal */}

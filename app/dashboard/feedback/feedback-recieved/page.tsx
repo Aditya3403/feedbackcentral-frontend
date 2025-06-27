@@ -26,6 +26,7 @@ type Feedback = {
 };
 
 const FeedbackReceived = () => {
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
   const { user, token, userType } = useAppStore();
   const [selectedManager, setSelectedManager] = useState<string>('');
   const [feedbackData, setFeedbackData] = useState<Feedback[]>([]);
@@ -54,7 +55,7 @@ const FeedbackReceived = () => {
 
     try {
       setIsLoading(true);
-      const response = await axios.get(`http://127.0.0.1:8000/api/auth/received-feedback/${user?.id}`, {
+      const response = await axios.get(`${BACKEND_URL}/api/auth/received-feedback/${user?.id}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -114,7 +115,7 @@ const FeedbackReceived = () => {
   const handleAcknowledge = useCallback(async (feedbackId: string) => {
     try {
       setIsLoading(true);
-      const response = await axios.post(`http://127.0.0.1:8000/api/auth/acknowledge-feedback`, {
+      const response = await axios.post(`${BACKEND_URL}/api/auth/acknowledge-feedback`, {
         feedback_id: feedbackId,
         employee_id: user?.id
       }, {

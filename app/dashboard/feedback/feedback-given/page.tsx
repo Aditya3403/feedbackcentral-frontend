@@ -18,7 +18,7 @@ type TeamMember = {
   email: string;
   feedback: string;
   feedback_count: number;
-  status: string
+  feedback_statuses: string[];
 };
 
 type Feedback = {
@@ -27,10 +27,18 @@ type Feedback = {
   strengths: string;
   areasToImprove: string;
   sentiment: 'positive' | 'neutral' | 'negative';
-  status: 'pending' | 'acknowledged'; 
+  status: 'pending' | 'acknowledged';
+};
+
+type EditingFeedback = {
+  id: string | null;
+  strengths: string;
+  areasToImprove: string;
+  sentiment: 'positive' | 'neutral' | 'negative';
 };
 
 const FeedbackGiven = () => {
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
   const { user, userType } = useAppStore();
   const isManager = userType === 'manager';
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -49,6 +57,12 @@ const FeedbackGiven = () => {
     employeeName: '',
     feedbacks: [] as Feedback[]
   });
+  const [editingFeedback, setEditingFeedback] = useState<EditingFeedback>({
+    id: null,
+    strengths: '',
+    areasToImprove: '',
+    sentiment: 'positive'
+  });
   const modalRef = useRef<HTMLDivElement>(null);
   const feedbackModalRef = useRef<HTMLDivElement>(null);
   const viewFeedbackModalRef = useRef<HTMLDivElement>(null);
@@ -61,8 +75,7 @@ const FeedbackGiven = () => {
   const fetchEmployees = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`http://127.0.0.1:8000/api/auth/get-employees?manager_id=${user?.id}`);
-      console.log("R", response)
+      const response = await axios.get(`${BACKEND_URL}/api/auth/get-employees?manager_id=${user?.id}`);
       if (response.data.success) {
         setTeamMembers(response.data.employees.map((emp: any) => ({
           id: emp.id.toString(),
@@ -70,7 +83,7 @@ const FeedbackGiven = () => {
           email: emp.email,
           feedback: `${emp.feedback_count || 0} Given`,
           feedback_count: emp.feedback_count || 0,
-          status: emp.feedback_status
+          feedback_statuses: emp.feedback_statuses || []
         })));
       }
     } catch (error) {
@@ -114,33 +127,32 @@ const FeedbackGiven = () => {
   }, []);
 
   const openViewFeedbackModal = useCallback(async (employeeId: string, employeeName: string) => {
-  try {
-    setIsLoading(true);
-    const response = await axios.get(`http://127.0.0.1:8000/api/auth/manager-feedbacks/${user?.id}?employee_id=${employeeId}`);
-    console.log(response)
-    if (response.data) {
-      const feedbacks = response.data.map((fb: any) => ({
-        id: fb.id.toString(),
-        date: fb.created_at.split('T')[0], // Format date
-        strengths: fb.strengths,
-        areasToImprove: fb.areas_to_improve,
-        sentiment: fb.overall_sentiment.toLowerCase() as 'positive' | 'neutral' | 'negative',
-        status: fb.feedback_status || 'pending'
-      }));
-      
-      setViewFeedbackModal({
-        isOpen: true,
-        employeeName,
-        feedbacks
-      });
+    try {
+      setIsLoading(true);
+      const response = await axios.get(`${BACKEND_URL}/api/auth/manager-feedbacks/${user?.id}?employee_id=${employeeId}`);
+      if (response.data) {
+        const feedbacks = response.data.map((fb: any) => ({
+          id: fb.id.toString(),
+          date: fb.created_at.split('T')[0],
+          strengths: fb.strengths,
+          areasToImprove: fb.areas_to_improve,
+          sentiment: fb.overall_sentiment.toLowerCase() as 'positive' | 'neutral' | 'negative',
+          status: fb.status.toLowerCase() as 'pending' | 'acknowledged'
+        }));
+        
+        setViewFeedbackModal({
+          isOpen: true,
+          employeeName,
+          feedbacks
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching feedbacks:', error);
+      toast.error('Failed to load feedbacks');
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    console.error('Error fetching feedbacks:', error);
-    toast.error('Failed to load feedbacks');
-  } finally {
-    setIsLoading(false);
-  }
-}, [user?.id]);
+  }, [user?.id]);
 
   const closeViewFeedbackModal = useCallback(() => {
     setViewFeedbackModal({
@@ -148,6 +160,7 @@ const FeedbackGiven = () => {
       employeeName: '',
       feedbacks: []
     });
+    cancelEditing();
   }, []);
 
   // Handle form submission for adding employee
@@ -159,14 +172,14 @@ const FeedbackGiven = () => {
 
     if (name && email) {
       try {
-        const response = await axios.post('http://127.0.0.1:8000/api/auth/add-employee', {
+        const response = await axios.post(`${BACKEND_URL}/api/auth/add-employee`, {
           employee_name: name,
           employee_email: email,
           manager_id: user?.id
         });
 
         if (response.data.success) {
-          toast.success('Employee added successfully!');
+          toast.success('Email sent to the employee successfully!');
           await fetchEmployees();
           closeModal();
           (e.target as HTMLFormElement).reset();
@@ -178,47 +191,113 @@ const FeedbackGiven = () => {
     }
   }, [closeModal, user?.id, fetchEmployees]);
 
+  const handleFeedbackSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const strengths = formData.get('strengths') as string;
+    const areasToImprove = formData.get('areasToImprove') as string;
+    const sentiment = formData.get('sentiment') as string;
 
-const handleFeedbackSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  const formData = new FormData(e.currentTarget);
-  const strengths = formData.get('strengths') as string;
-  const areasToImprove = formData.get('areasToImprove') as string;
-  const sentiment = formData.get('sentiment') as string;
-
-  // Ensure sentiment is always uppercase to match backend enum
-  const uppercaseSentiment = sentiment.toUpperCase();
-  
-  // Validate the sentiment value
-  const validSentiments = ['POSITIVE', 'NEUTRAL', 'NEGATIVE'];
-  if (!validSentiments.includes(uppercaseSentiment)) {
-    toast.error('Invalid sentiment value');
-    return;
-  }
-
-  try {
-    setIsLoading(true);
-    const response = await axios.post('http://127.0.0.1:8000/api/auth/submit-feedback', {
-      manager_id: user?.id,
-      employee_id: feedbackModal.employeeId,
-      strengths,
-      areas_to_improve: areasToImprove,
-      overall_sentiment: uppercaseSentiment,
-      date: new Date().toISOString().split('T')[0]
-    });
-
-    if (response.data.success) {
-      toast.success('Feedback submitted successfully!');
-      closeFeedbackModal();
-      await fetchEmployees();
+    const uppercaseSentiment = sentiment.toUpperCase();
+    
+    const validSentiments = ['POSITIVE', 'NEUTRAL', 'NEGATIVE'];
+    if (!validSentiments.includes(uppercaseSentiment)) {
+      toast.error('Invalid sentiment value');
+      return;
     }
-  } catch (error) {
-    console.error('Error submitting feedback:', error);
-    toast.error('Failed to submit feedback. Please try again.');
-  } finally {
-    setIsLoading(false);
-  }
-}, [feedbackModal.employeeId, user?.id, fetchEmployees, closeFeedbackModal]);
+
+    try {
+      setIsLoading(true);
+      const response = await axios.post(`${BACKEND_URL}/api/auth/submit-feedback`, {
+        manager_id: user?.id,
+        employee_id: feedbackModal.employeeId,
+        strengths,
+        areas_to_improve: areasToImprove,
+        overall_sentiment: uppercaseSentiment,
+        date: new Date().toISOString().split('T')[0]
+      });
+
+      if (response.data.success) {
+        toast.success('Feedback submitted successfully!');
+        closeFeedbackModal();
+        await fetchEmployees();
+      }
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      toast.error('Failed to submit feedback. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [feedbackModal.employeeId, user?.id, fetchEmployees, closeFeedbackModal]);
+
+  // Inline edit handlers
+  const startEditing = useCallback((feedback: Feedback) => {
+    setEditingFeedback({
+      id: feedback.id,
+      strengths: feedback.strengths,
+      areasToImprove: feedback.areasToImprove,
+      sentiment: feedback.sentiment
+    });
+  }, []);
+
+  const cancelEditing = useCallback(() => {
+    setEditingFeedback({
+      id: null,
+      strengths: '',
+      areasToImprove: '',
+      sentiment: 'positive'
+    });
+  }, []);
+
+  const handleEditChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setEditingFeedback(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  }, []);
+
+  const handleFeedbackUpdate = useCallback(async (feedbackId: string) => {
+    try {
+      setIsLoading(true);
+      
+      const validSentiments = ['POSITIVE', 'NEUTRAL', 'NEGATIVE'];
+      const uppercaseSentiment = editingFeedback.sentiment.toUpperCase();
+      if (!validSentiments.includes(uppercaseSentiment)) {
+        toast.error('Invalid sentiment value');
+        return;
+      }
+
+      const response = await axios.put(`${BACKEND_URL}/api/auth/update-feedback/${feedbackId}`, {
+        strengths: editingFeedback.strengths,
+        areas_to_improve: editingFeedback.areasToImprove,
+        overall_sentiment: uppercaseSentiment
+      });
+
+      if (response.data.success) {
+        toast.success('Feedback updated successfully!');
+        
+        setViewFeedbackModal(prev => ({
+          ...prev,
+          feedbacks: prev.feedbacks.map(fb => 
+            fb.id === feedbackId ? {
+              ...fb,
+              strengths: editingFeedback.strengths,
+              areasToImprove: editingFeedback.areasToImprove,
+              sentiment: editingFeedback.sentiment
+            } : fb
+          )
+        }));
+        
+        cancelEditing();
+      }
+    } catch (error) {
+      console.error('Error updating feedback:', error);
+      toast.error('Failed to update feedback. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [editingFeedback, cancelEditing]);
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -266,18 +345,25 @@ const handleFeedbackSubmit = useCallback(async (e: React.FormEvent<HTMLFormEleme
       header: 'Feedback Count',
     },
     {
-    id: 'acknowledged',
-    header: 'Acknowledged',
-    cell: ({ row }) => (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-        row.original.status === 'ACKNOWLEDGED' 
-          ? 'bg-green-100 text-green-800' 
-          : 'bg-gray-100 text-gray-800'
-      }`}>
-        {row.original.status === 'ACKNOWLEDGED' ? 'Yes' : 'No'}
-      </span>
-    ),
-  },
+      id: 'acknowledged',
+      header: 'Acknowledged',
+      cell: ({ row }) => (
+        <div className="flex flex-wrap gap-1">
+          {row.original.feedback_statuses.map((status, index) => (
+            <span 
+              key={index}
+              className={`px-2 py-1 text-xs font-medium rounded-full ${
+                status === 'ACKNOWLEDGED' 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-gray-100 text-gray-800'
+              }`}
+            >
+              {status === 'ACKNOWLEDGED' ? 'Yes' : 'No'}
+            </span>
+          ))}
+        </div>
+      ),
+    },
     {
       id: 'actions',
       header: 'Actions',
@@ -310,9 +396,8 @@ const handleFeedbackSubmit = useCallback(async (e: React.FormEvent<HTMLFormEleme
 
   return (
     <>
-       {isManager ? (
+      {isManager ? (
         <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-200 relative">
-          {/* Main Content */}
           <div className="flex justify-between items-start mb-6">
             <h2 className="text-xl font-semibold">Feedback Given</h2>
             <button
@@ -398,7 +483,6 @@ const handleFeedbackSubmit = useCallback(async (e: React.FormEvent<HTMLFormEleme
         </div>
       )}
 
-      {/* Add Employee Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/30 backdrop-blur-sm">
           <div 
@@ -561,76 +645,137 @@ const handleFeedbackSubmit = useCallback(async (e: React.FormEvent<HTMLFormEleme
         </div>
       )}
 
-     {/* View Feedback Modal */}
-    {viewFeedbackModal.isOpen && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/30 backdrop-blur-sm overflow-y-auto">
-        <div 
-          ref={viewFeedbackModalRef}
-          className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 shadow-xl transform transition-all my-8 max-h-[calc(100vh-4rem)] overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex justify-between items-center mb-4 bg-white pb-4">
-            <h3 className="text-lg font-medium text-gray-900">
-              Feedback for {viewFeedbackModal.employeeName}
-            </h3>
-            <button
-              type="button"
-              onClick={closeViewFeedbackModal}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          
-          <div className="space-y-4">
-            {viewFeedbackModal.feedbacks.map((feedback) => (
-              <div key={feedback.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-medium text-gray-500">
-                    {new Date(feedback.date).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </span>
-                  <button
-                    type="button"
-                    className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                  >
-                    Edit
-                  </button>
-                </div>
-                
-                <div className="space-y-3">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-1">Strengths</h4>
-                    <p className="text-sm text-gray-600">{feedback.strengths}</p>
+      {/* View Feedback Modal */}
+      {viewFeedbackModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/30 backdrop-blur-sm overflow-y-auto">
+          <div 
+            ref={viewFeedbackModalRef}
+            className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 shadow-xl transform transition-all my-8 max-h-[calc(100vh-4rem)] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4 bg-white pb-4 bg-white z-10">
+              <h3 className="text-lg font-medium text-gray-900">
+                Feedback for {viewFeedbackModal.employeeName}
+              </h3>
+              <button
+                type="button"
+                onClick={closeViewFeedbackModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {viewFeedbackModal.feedbacks.map((feedback) => (
+                <div key={feedback.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-500">
+                        {new Date(feedback.date).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </span>
+                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                        feedback.status === 'acknowledged' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {feedback.status === 'acknowledged' ? 'Acknowledged' : 'Pending'}
+                      </span>
+                    </div>
+                    {editingFeedback.id === feedback.id ? (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={cancelEditing}
+                          className="text-gray-600 hover:text-gray-800 text-sm font-medium px-2 py-1 rounded hover:bg-gray-100"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleFeedbackUpdate(feedback.id)}
+                          className="text-indigo-600 hover:text-indigo-800 text-sm font-medium px-2 py-1 rounded hover:bg-indigo-50"
+                          disabled={isLoading}
+                        >
+                          {isLoading ? 'Saving...' : 'Save'}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => startEditing(feedback)}
+                        className="text-indigo-600 hover:text-indigo-800 text-sm font-medium px-2 py-1 rounded hover:bg-indigo-50"
+                      >
+                        Edit
+                      </button>
+                    )}
                   </div>
                   
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-1">Areas to Improve</h4>
-                    <p className="text-sm text-gray-600">{feedback.areasToImprove}</p>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-1">Overall Sentiment</h4>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      feedback.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
-                      feedback.sentiment === 'neutral' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {feedback.sentiment.charAt(0).toUpperCase() + feedback.sentiment.slice(1)}
-                    </span>
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-1">Strengths</h4>
+                      {editingFeedback.id === feedback.id ? (
+                        <textarea
+                          name="strengths"
+                          value={editingFeedback.strengths}
+                          onChange={handleEditChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors min-h-[80px] text-sm"
+                        />
+                      ) : (
+                        <p className="text-sm text-gray-600">{feedback.strengths}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-1">Areas to Improve</h4>
+                      {editingFeedback.id === feedback.id ? (
+                        <textarea
+                          name="areasToImprove"
+                          value={editingFeedback.areasToImprove}
+                          onChange={handleEditChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors min-h-[80px] text-sm"
+                        />
+                      ) : (
+                        <p className="text-sm text-gray-600">{feedback.areasToImprove}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-1">Overall Sentiment</h4>
+                      {editingFeedback.id === feedback.id ? (
+                        <select
+                          name="sentiment"
+                          value={editingFeedback.sentiment}
+                          onChange={handleEditChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-sm"
+                        >
+                          <option value="positive">Positive</option>
+                          <option value="neutral">Neutral</option>
+                          <option value="negative">Negative</option>
+                        </select>
+                      ) : (
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          feedback.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
+                          feedback.sentiment === 'neutral' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {feedback.sentiment.charAt(0).toUpperCase() + feedback.sentiment.slice(1)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
     </>
   );
 };

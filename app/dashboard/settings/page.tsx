@@ -26,7 +26,6 @@ const SettingsPage = () => {
     <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-200">
       <h1 className="text-2xl font-semibold mb-6">Settings</h1>
       
-      {/* Tabs Navigation */}
       <div className="border-b border-gray-200 mb-6">
         <nav className="-mb-px flex space-x-8">
           <button
@@ -39,7 +38,7 @@ const SettingsPage = () => {
           >
             Personal Details
           </button>
-          <button
+          {/* <button
             onClick={() => setActiveTab('security')}
             className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg ${
               activeTab === 'security'
@@ -48,7 +47,7 @@ const SettingsPage = () => {
             }`}
           >
             Security
-          </button>
+          </button> */}
         </nav>
       </div>
 
@@ -56,7 +55,6 @@ const SettingsPage = () => {
       {activeTab === 'user-info' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Name Field */}
             <div className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
                 <User className="w-5 h-5 text-gray-500" />
@@ -72,8 +70,6 @@ const SettingsPage = () => {
                 <p className="text-gray-900">{user.full_name}</p>
               )}
             </div>
-
-            {/* Email Field */}
             <div className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
                 <Mail className="w-5 h-5 text-gray-500" />
@@ -90,7 +86,6 @@ const SettingsPage = () => {
               )}
             </div>
 
-            {/* Company Field */}
             <div className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
                 <Hotel className="w-5 h-5 text-gray-500" />
@@ -99,73 +94,12 @@ const SettingsPage = () => {
               <p className="text-gray-900">{user.company}</p>
             </div>
 
-            {/* Role Field */}
             <div className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-center gap-3 mb-2">
                 <Briefcase className="w-5 h-5 text-gray-500" />
                 <label className="text-sm font-medium text-gray-700">Department</label>
               </div>
               <p className="text-gray-900 capitalize">{user.department}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Security Tab */}
-      {activeTab === 'security' && (
-        <div className="space-y-6">
-          <div className="flex flex-col gap-6">
-            <h2 className="text-lg font-medium">Change Password</h2>
-            
-            {/* Password Fields in Single Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Current Password */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <Key className="w-5 h-5 text-gray-500" />
-                  <label htmlFor="currentPassword" className="text-sm font-medium text-gray-700">
-                    Current Password
-                  </label>
-                </div>
-                <input
-                  type="password"
-                  id="currentPassword"
-                  name="currentPassword"
-                  value={user.currentPassword}
-                  onChange={handlePasswordChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-                  placeholder="Enter current password"
-                />
-              </div>
-
-              {/* New Password */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <Lock className="w-5 h-5 text-gray-500" />
-                  <label htmlFor="newPassword" className="text-sm font-medium text-gray-700">
-                    New Password
-                  </label>
-                </div>
-                <input
-                  type="password"
-                  id="newPassword"
-                  name="newPassword"
-                  value={passwordData.newPassword}
-                  onChange={handlePasswordChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-                  placeholder="Enter new password"
-                />
-              </div>
-            </div>
-
-            {/* Update Password Button */}
-            <div className="flex justify-end">
-              <button
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                onClick={() => console.log('Update password:', passwordData)}
-              >
-                Update Password
-              </button>
             </div>
           </div>
         </div>
