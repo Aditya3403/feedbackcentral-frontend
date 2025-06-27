@@ -1,10 +1,10 @@
 "use client";
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import axios from 'axios';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function SetPassword() {
+function SetPasswordContent() {
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -140,5 +140,13 @@ export default function SetPassword() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function SetPassword() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <SetPasswordContent />
+    </Suspense>
   );
 }
