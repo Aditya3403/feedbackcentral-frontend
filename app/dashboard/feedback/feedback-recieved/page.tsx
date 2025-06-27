@@ -1,7 +1,7 @@
 "use client";
 import ProtectedRoute from '../../../../auth/ProtectedRoute';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Check, Trash2, Eye, X } from 'lucide-react';
+import { Check, Eye, X } from 'lucide-react';
 import { useAppStore } from '../../../../store/useAppStore';
 import {
   useReactTable,
@@ -38,7 +38,6 @@ type FeedbackResponse = {
 const FeedbackReceived = () => {
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
   const { user, token, userType } = useAppStore();
-  const [selectedManager, setSelectedManager] = useState<string>('');
   const [feedbackData, setFeedbackData] = useState<Feedback[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [feedbackModal, setFeedbackModal] = useState({

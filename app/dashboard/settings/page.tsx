@@ -7,7 +7,6 @@ import { useAppStore } from '../../../store/useAppStore';
 const SettingsPage = () => {
   const { user } = useAppStore();
   const [activeTab, setActiveTab] = useState('user-info');
-  const [isEditing, setIsEditing] = useState(false);
   
   return (
     <ProtectedRoute>
@@ -26,7 +25,6 @@ const SettingsPage = () => {
             >
               Personal Details
             </button>
-            
           </nav>
         </div>
 
@@ -39,30 +37,15 @@ const SettingsPage = () => {
                   <User className="w-5 h-5 text-gray-500" />
                   <label className="text-sm font-medium text-gray-700">Name</label>
                 </div>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    defaultValue={user?.full_name || ''}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-                  />
-                ) : (
-                  <p className="text-gray-900">{user?.full_name || 'Not available'}</p>
-                )}
+                <p className="text-gray-900">{user?.full_name || 'Not available'}</p>
               </div>
+              
               <div className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center gap-3 mb-2">
                   <Mail className="w-5 h-5 text-gray-500" />
                   <label className="text-sm font-medium text-gray-700">Email</label>
                 </div>
-                {isEditing ? (
-                  <input
-                    type="email"
-                    defaultValue={user?.email || ''}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700"
-                  />
-                ) : (
-                  <p className="text-gray-900">{user?.email || 'Not available'}</p>
-                )}
+                <p className="text-gray-900">{user?.email || 'Not available'}</p>
               </div>
 
               <div className="border border-gray-200 rounded-lg p-4">
@@ -81,10 +64,8 @@ const SettingsPage = () => {
                 <p className="text-gray-900 capitalize">{user?.department || 'Not available'}</p>
               </div>
             </div>
-
           </div>
         )}
-
       </div>
     </ProtectedRoute>
   );

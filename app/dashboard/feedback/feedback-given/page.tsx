@@ -102,6 +102,7 @@ const FeedbackGiven = () => {
         })));
       }
     } catch (error) {
+      console.error(error);
     } finally {
       setIsLoading(false);
     }

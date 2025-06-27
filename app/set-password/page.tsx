@@ -1,12 +1,11 @@
 "use client";
 import { useState } from 'react';
 import axios from 'axios';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 export default function SetPassword() {
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-  const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   

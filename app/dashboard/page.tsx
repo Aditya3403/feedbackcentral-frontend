@@ -17,12 +17,21 @@ type Feedback = {
   status?: 'pending' | 'acknowledged';
 };
 
+type ApiFeedback = {
+  id: number;
+  created_at: string;
+  strengths: string;
+  areas_to_improve: string;
+  overall_sentiment: string;
+  manager_name: string;
+  status?: string;
+};
+
 export default function DashboardPage() {
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
   const { user, token, userType } = useAppStore();
   const [isLoading, setIsLoading] = useState(true);
   const [totalFeedbacks, setTotalFeedbacks] = useState(0);
-  const [unreadFeedbacks, setUnreadFeedbacks] = useState(0);
   const [recentFeedbacks, setRecentFeedbacks] = useState<Feedback[]>([]);
   const [feedbackModal, setFeedbackModal] = useState({
     isOpen: false,
@@ -47,7 +56,7 @@ export default function DashboardPage() {
       });
       
       if (response.data) {
-        const feedbacks: Feedback[] = response.data.map((fb: any) => ({
+        const feedbacks: Feedback[] = response.data.map((fb: ApiFeedback) => ({
           id: fb.id.toString(),
           date: new Date(fb.created_at).toLocaleDateString('en-US', {
             year: 'numeric',
@@ -62,7 +71,6 @@ export default function DashboardPage() {
         }));
 
         setTotalFeedbacks(feedbacks.length);
-        setUnreadFeedbacks(feedbacks.filter((f) => f.status === 'pending').length);
         setRecentFeedbacks(feedbacks.slice(0, 3));
       }
     } catch (error) {
