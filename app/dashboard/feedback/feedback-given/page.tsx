@@ -37,6 +37,23 @@ type EditingFeedback = {
   sentiment: 'positive' | 'neutral' | 'negative';
 };
 
+type EmployeeResponse = {
+  id: number | string;
+  full_name: string;
+  email: string;
+  feedback_count?: number;
+  feedback_statuses?: string[];
+};
+
+type FeedbackResponse = {
+  id: number | string;
+  created_at: string;
+  strengths: string;
+  areas_to_improve: string;
+  overall_sentiment: string;
+  status: string;
+};
+
 const FeedbackGiven = () => {
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
   const { user, userType } = useAppStore();
@@ -67,17 +84,15 @@ const FeedbackGiven = () => {
   const feedbackModalRef = useRef<HTMLDivElement>(null);
   const viewFeedbackModalRef = useRef<HTMLDivElement>(null);
 
-  // Data
   const companyName = user?.company || 'Unknown Company';
   const department = user?.department || "No department assigned";
 
-  // Fetch employees under manager
   const fetchEmployees = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await axios.get(`${BACKEND_URL}/api/auth/get-employees?manager_id=${user?.id}`);
       if (response.data.success) {
-        setTeamMembers(response.data.employees.map((emp: any) => ({
+        setTeamMembers(response.data.employees.map((emp: EmployeeResponse) => ({
           id: emp.id.toString(),
           name: emp.full_name,
           email: emp.email,
@@ -87,12 +102,10 @@ const FeedbackGiven = () => {
         })));
       }
     } catch (error) {
-      console.error('Error fetching employees:', error);
-      toast.error('Failed to load team members');
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, BACKEND_URL]);
 
   useEffect(() => {
     if (user?.id) {
@@ -100,7 +113,6 @@ const FeedbackGiven = () => {
     }
   }, [user?.id, fetchEmployees]);
 
-  // Memoized handlers
   const openModal = useCallback(() => setIsModalOpen(true), []);
   const closeModal = useCallback(() => setIsModalOpen(false), []);
 
@@ -131,7 +143,7 @@ const FeedbackGiven = () => {
       setIsLoading(true);
       const response = await axios.get(`${BACKEND_URL}/api/auth/manager-feedbacks/${user?.id}?employee_id=${employeeId}`);
       if (response.data) {
-        const feedbacks = response.data.map((fb: any) => ({
+        const feedbacks = response.data.map((fb: FeedbackResponse) => ({
           id: fb.id.toString(),
           date: fb.created_at.split('T')[0],
           strengths: fb.strengths,
@@ -152,7 +164,7 @@ const FeedbackGiven = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, BACKEND_URL]);
 
   const closeViewFeedbackModal = useCallback(() => {
     setViewFeedbackModal({
@@ -163,7 +175,6 @@ const FeedbackGiven = () => {
     cancelEditing();
   }, []);
 
-  // Handle form submission for adding employee
   const handleFormSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -186,10 +197,10 @@ const FeedbackGiven = () => {
         }
       } catch (error) {
         console.error('Error adding employee:', error);
-        toast.error('Failed to add employee. Please try again.');
+        toast.error('Failed to send email to employee. Please try again.');
       }
     }
-  }, [closeModal, user?.id, fetchEmployees]);
+  }, [closeModal, user?.id, fetchEmployees, BACKEND_URL]);
 
   const handleFeedbackSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -228,9 +239,8 @@ const FeedbackGiven = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [feedbackModal.employeeId, user?.id, fetchEmployees, closeFeedbackModal]);
+  }, [feedbackModal.employeeId, user?.id, fetchEmployees, closeFeedbackModal, BACKEND_URL]);
 
-  // Inline edit handlers
   const startEditing = useCallback((feedback: Feedback) => {
     setEditingFeedback({
       id: feedback.id,
@@ -297,7 +307,7 @@ const FeedbackGiven = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [editingFeedback, cancelEditing]);
+  }, [editingFeedback, cancelEditing, BACKEND_URL]);
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -329,7 +339,6 @@ const FeedbackGiven = () => {
     };
   }, [isModalOpen, feedbackModal.isOpen, viewFeedbackModal.isOpen, closeModal, closeFeedbackModal, closeViewFeedbackModal]);
 
-  // Table columns
   const columns: ColumnDef<TeamMember>[] = [
     {
       accessorKey: 'name',
@@ -477,7 +486,7 @@ const FeedbackGiven = () => {
       ) : (
         <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="text-center py-12">
-            <p className="text-gray-700 text-lg">You don't have permission to write feedback</p>
+            <p className="text-gray-700 text-lg">You don&apos;t have permission to write feedback</p>
             <p className="text-gray-500 mt-2">Only managers can access this feature</p>
           </div>
         </div>
@@ -552,7 +561,6 @@ const FeedbackGiven = () => {
         </div>
       )}
 
-      {/* Feedback Modal */}
       {feedbackModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/30 backdrop-blur-sm">
           <div 
@@ -645,7 +653,6 @@ const FeedbackGiven = () => {
         </div>
       )}
 
-      {/* View Feedback Modal */}
       {viewFeedbackModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/30 backdrop-blur-sm overflow-y-auto">
           <div 

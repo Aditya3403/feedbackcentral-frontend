@@ -1,11 +1,10 @@
-"use client"
+"use client";
 
 import Navbar from "../navbar/navbar";
 import { useAppContext } from '../context/useAppContext';
 
 export default function Home() {
   const { 
-    showAuthModal, 
     setShowAuthModal,
   } = useAppContext();
 
@@ -24,10 +23,16 @@ export default function Home() {
               fostering growth and organizational excellence.
             </p>
             <div className="flex justify-center gap-4">
-              <button onClick={()=> setShowAuthModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg shadow-md transition duration-300">
+              <button 
+                onClick={() => setShowAuthModal(true)} 
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg shadow-md transition duration-300"
+              >
                 Submit Feedback
               </button>
-              <button onClick={()=> setShowAuthModal(true)} className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-semibold py-3 px-8 rounded-lg shadow-md transition duration-300">
+              <button 
+                onClick={() => setShowAuthModal(true)} 
+                className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-semibold py-3 px-8 rounded-lg shadow-md transition duration-300"
+              >
                 View Dashboard
               </button>
             </div>
@@ -80,7 +85,7 @@ export default function Home() {
                 </div>
                 <h3 className="font-semibold">Submit Feedback</h3>
                 <p className="text-sm text-gray-600 mt-1">
-                   Managers initiate feedback
+                  Managers initiate feedback
                 </p>
               </div>
               <div className="text-center">
@@ -119,8 +124,8 @@ export default function Home() {
           <div className="max-w-3xl mx-auto px-4 text-center">
             <div className="text-yellow-400 text-4xl mb-4">★ ★ ★ ★ ★</div>
             <blockquote className="text-xl italic text-gray-700 mb-6">
-              "This system has transformed how we handle feedback in our organization. What used to
-              be an annual stressful event is now an ongoing, constructive conversation."
+              &quot;This system has transformed how we handle feedback in our organization. What used to
+              be an annual stressful event is now an ongoing, constructive conversation.&quot;
             </blockquote>
             <div className="font-semibold text-gray-800">Sarah Johnson, HR Director</div>
           </div>
@@ -133,7 +138,10 @@ export default function Home() {
             <p className="text-xl mb-8 opacity-90">
               Join hundreds of organizations fostering growth through continuous feedback.
             </p>
-            <button onClick={()=> setShowAuthModal(true)} className="bg-white text-blue-600 hover:bg-gray-100 font-bold py-3 px-8 rounded-lg shadow-lg transition duration-300">
+            <button 
+              onClick={() => setShowAuthModal(true)} 
+              className="bg-white text-blue-600 hover:bg-gray-100 font-bold py-3 px-8 rounded-lg shadow-lg transition duration-300"
+            >
               Get Started Today
             </button>
           </div>

@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState,useEffect } from "react";
+import { useState } from "react";
 import { X } from "lucide-react";
 import { useRouter } from 'next/navigation'; 
 import { useAppStore } from '../store/useAppStore';
@@ -11,15 +11,7 @@ interface LoginData {
   password: string;
 }
 
-interface ManagerSignupData {
-  full_name: string; 
-  email: string;
-  company: string;
-  department: string;
-  password: string;
-}
-
-interface EmployeeSignupData {
+interface SignupData {
   full_name: string;
   email: string;
   company: string;
@@ -29,15 +21,14 @@ interface EmployeeSignupData {
 
 const Navbar = () => {
   const router = useRouter();
-  const { login, signup, logout, user, token  } = useAppStore();
-  const { 
-    showAuthModal, 
-    setShowAuthModal,
-  } = useAppContext();
+  const { login, signup, logout, user, token } = useAppStore();
+  const { showAuthModal, setShowAuthModal } = useAppContext();
+  
   const [isLogin, setIsLogin] = useState(true);
   const [userType, setUserType] = useState<'manager' | 'employee'>('manager');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
   const isAuthenticated = !!token;
 
   const [loginData, setLoginData] = useState<LoginData>({
@@ -45,7 +36,7 @@ const Navbar = () => {
     password: ''
   });
 
-  const [managerSignupData, setManagerSignupData] = useState<ManagerSignupData>({
+  const [signupData, setSignupData] = useState<SignupData>({
     full_name: '',
     email: '',
     company: '',
@@ -53,20 +44,7 @@ const Navbar = () => {
     password: ''
   });
 
-  const [employeeSignupData, setEmployeeSignupData] = useState<EmployeeSignupData>({
-    full_name: '',
-    email: '',
-    company: '',
-    department: '',
-    password: ''
-  });
-
-
-  const handleDashboardClick = () => {
-    router.push('/dashboard');
-  };
-
- const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -88,8 +66,7 @@ const Navbar = () => {
     setError(null);
 
     try {
-      const userData = userType === 'manager' ? managerSignupData : employeeSignupData;
-      await signup(userData, userType === 'manager');
+      await signup(signupData, userType === 'manager');
       setShowAuthModal(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');
@@ -98,19 +75,26 @@ const Navbar = () => {
     }
   };
 
-  const handleLoginInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    setLoginData(prev => ({ ...prev, [id]: value }));
+    
+    if (isLogin) {
+      setLoginData(prev => ({ ...prev, [id]: value }));
+    } else {
+      setSignupData(prev => ({ ...prev, [id]: value }));
+    }
   };
 
-  const handleManagerSignupInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setManagerSignupData(prev => ({ ...prev, [id]: value }));
-  };
-
-  const handleEmployeeSignupInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setEmployeeSignupData(prev => ({ ...prev, [id]: value }));
+  const resetForm = () => {
+    setError(null);
+    setLoginData({ email: '', password: '' });
+    setSignupData({ 
+      full_name: '', 
+      email: '', 
+      company: '', 
+      department: '', 
+      password: '' 
+    });
   };
 
   return (
@@ -121,17 +105,22 @@ const Navbar = () => {
             <span className="text-black font-semibold text-lg">Feedback Central</span>
           </div>
         </div>
+        
         <div>
           {isAuthenticated ? (
             <div className="flex items-center gap-4">
               <div className="relative group">
-                <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors">
+                <button 
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                  aria-label="User menu"
+                >
                   <span className="hidden sm:inline">Welcome, {user?.full_name}</span>
                   <svg 
                     xmlns="http://www.w3.org/2000/svg" 
                     className="h-4 w-4" 
                     viewBox="0 0 20 20" 
                     fill="currentColor"
+                    aria-hidden="true"
                   >
                     <path 
                       fillRule="evenodd" 
@@ -161,8 +150,12 @@ const Navbar = () => {
             </div>
           ) : (
             <button
-              onClick={() => setShowAuthModal(true)}
+              onClick={() => {
+                setShowAuthModal(true);
+                resetForm();
+              }}
               className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+              aria-label="Login"
             >
               Login
             </button>
@@ -176,16 +169,18 @@ const Navbar = () => {
           <div 
             className="absolute inset-0 bg-white/30 backdrop-blur-sm"
             onClick={() => setShowAuthModal(false)}
+            aria-hidden="true"
           />
           
           <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4 border border-gray-200 max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-center p-6 pb-0 flex-shrink-0">
               <h2 className="text-xl font-semibold text-center w-full">
-                {isLogin ? 'Login' : 'Sign Up as:'}
+                {isLogin ? 'Login' : `Sign Up as ${userType}`}
               </h2>
               <button 
                 onClick={() => setShowAuthModal(false)}
                 className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
+                aria-label="Close modal"
               >
                 <X size={24} />
               </button>
@@ -202,6 +197,7 @@ const Navbar = () => {
                 <div className="mb-6 text-center">
                   <div className="flex gap-4 justify-center">
                     <button
+                      type="button"
                       onClick={() => setUserType('manager')}
                       className={`py-2 px-4 rounded-md border ${
                         userType === 'manager'
@@ -212,6 +208,7 @@ const Navbar = () => {
                       Manager
                     </button>
                     <button
+                      type="button"
                       onClick={() => setUserType('employee')}
                       className={`py-2 px-4 rounded-md border ${
                         userType === 'employee'
@@ -238,10 +235,11 @@ const Navbar = () => {
                             type="email"
                             id="email"
                             value={loginData.email}
-                            onChange={handleLoginInputChange}
+                            onChange={handleInputChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
                             placeholder="your@email.com"
                             required
+                            autoComplete="email"
                           />
                         </div>
                         <div className="w-full max-w-xs">
@@ -252,134 +250,74 @@ const Navbar = () => {
                             type="password"
                             id="password"
                             value={loginData.password}
-                            onChange={handleLoginInputChange}
+                            onChange={handleInputChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
                             placeholder="••••••••"
                             required
+                            autoComplete="current-password"
                           />
                         </div>
                       </>
                     ) : (
                       <>
-                        {userType === 'manager' ? (
-                          <>
-                            <div className="w-full max-w-xs">
-                              <label htmlFor="fullname" className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                                Full Name
-                              </label>
-                              <input
-                                type="text"
-                                id="full_name"
-                                value={managerSignupData.full_name}
-                                onChange={handleManagerSignupInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                placeholder="Full Name"
-                                required
-                              />
-                            </div>
-                            <div className="w-full max-w-xs">
-                              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                                Email
-                              </label>
-                              <input
-                                type="email"
-                                id="email"
-                                value={managerSignupData.email}
-                                onChange={handleManagerSignupInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                placeholder="your@email.com"
-                                required
-                              />
-                            </div>
-                            <div className="w-full max-w-xs">
-                              <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                                Company
-                              </label>
-                              <input
-                                type="text"
-                                id="company"
-                                value={managerSignupData.company}
-                                onChange={handleManagerSignupInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                placeholder="Company Name"
-                                required
-                              />
-                            </div>
-                            <div className="w-full max-w-xs">
-                              <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                                Department
-                              </label>
-                              <input
-                                type="text"
-                                id="department"
-                                value={managerSignupData.department}
-                                onChange={handleManagerSignupInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                placeholder="Department"
-                                required
-                              />
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="w-full max-w-xs">
-                              <label htmlFor="fullname" className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                                Full Name
-                              </label>
-                              <input
-                                type="text"
-                                id="full_name"
-                                value={employeeSignupData.full_name}
-                                onChange={handleEmployeeSignupInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                placeholder="Your Name"
-                                required
-                              />
-                            </div>
-                            <div className="w-full max-w-xs">
-                              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                                Email
-                              </label>
-                              <input
-                                type="email"
-                                id="email"
-                                value={employeeSignupData.email}
-                                onChange={handleEmployeeSignupInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                placeholder="your@email.com"
-                                required
-                              />
-                            </div>
-                            <div className="w-full max-w-xs">
-                              <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                                Company
-                              </label>
-                              <input
-                                type="text"
-                                id="company"
-                                value={employeeSignupData.company}
-                                onChange={handleEmployeeSignupInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                placeholder="Company Name"
-                                required
-                              />
-                            </div>
-                            <div className="w-full max-w-xs">
-                              <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                                Department
-                              </label>
-                              <input
-                                type="text"
-                                id="department"
-                                value={employeeSignupData.department}
-                                onChange={handleEmployeeSignupInputChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                placeholder="Department"
-                                required
-                              />
-                            </div>
-                          </>
-                        )}
+                        <div className="w-full max-w-xs">
+                          <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-1 text-left">
+                            Full Name
+                          </label>
+                          <input
+                            type="text"
+                            id="full_name"
+                            value={signupData.full_name}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            placeholder={userType === 'manager' ? 'Full Name' : 'Your Name'}
+                            required
+                            autoComplete="name"
+                          />
+                        </div>
+                        <div className="w-full max-w-xs">
+                          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1 text-left">
+                            Email
+                          </label>
+                          <input
+                            type="email"
+                            id="email"
+                            value={signupData.email}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            placeholder="your@email.com"
+                            required
+                            autoComplete="email"
+                          />
+                        </div>
+                        <div className="w-full max-w-xs">
+                          <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1 text-left">
+                            Company
+                          </label>
+                          <input
+                            type="text"
+                            id="company"
+                            value={signupData.company}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            placeholder="Company Name"
+                            required
+                          />
+                        </div>
+                        <div className="w-full max-w-xs">
+                          <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1 text-left">
+                            Department
+                          </label>
+                          <input
+                            type="text"
+                            id="department"
+                            value={signupData.department}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            placeholder="Department"
+                            required
+                          />
+                        </div>
                         <div className="w-full max-w-xs">
                           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1 text-left">
                             Password
@@ -387,11 +325,12 @@ const Navbar = () => {
                           <input
                             type="password"
                             id="password"
-                            value={userType === 'manager' ? managerSignupData.password : employeeSignupData.password}
-                            onChange={userType === 'manager' ? handleManagerSignupInputChange : handleEmployeeSignupInputChange}
+                            value={signupData.password}
+                            onChange={handleInputChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
                             placeholder="••••••••"
                             required
+                            autoComplete="new-password"
                           />
                         </div>
                       </>
@@ -425,6 +364,7 @@ const Navbar = () => {
                   <p>
                     New to Feedback Central?{' '}
                     <button
+                      type="button"
                       onClick={() => {
                         setIsLogin(false);
                         setError(null);
@@ -438,6 +378,7 @@ const Navbar = () => {
                   <p>
                     Already have an account?{' '}
                     <button
+                      type="button"
                       onClick={() => {
                         setIsLogin(true);
                         setError(null);
@@ -454,7 +395,6 @@ const Navbar = () => {
         </div>
       )}
     </>
-    
   );
 };
 

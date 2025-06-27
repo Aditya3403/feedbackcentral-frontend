@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import ProtectedRoute from '../../../../auth/ProtectedRoute';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Check, Trash2, Eye, X } from 'lucide-react';
@@ -23,6 +23,16 @@ type Feedback = {
   strengths?: string;
   areasToImprove?: string;
   overallSentiment?: 'positive' | 'negative' | 'neutral';
+};
+
+type FeedbackResponse = {
+  id: string | number;
+  created_at: string;
+  feedback_status?: string;
+  employee_name?: string;
+  strengths?: string;
+  areas_to_improve?: string;
+  overall_sentiment?: string;
 };
 
 const FeedbackReceived = () => {
@@ -62,16 +72,16 @@ const FeedbackReceived = () => {
       });
       
       if (response.data) {
-        setFeedbackData(response.data.map((fb: any, index: number) => ({
+        setFeedbackData(response.data.map((fb: FeedbackResponse, index: number) => ({
           id: fb.id.toString(),
           sno: index + 1,
           date: fb.created_at?.split('T')[0] || '',
-          feedback: `${fb.strengths}\n\n${fb.areas_to_improve}`,
-          status: fb.feedback_status || 'pending',
+          feedback: `${fb.strengths || ''}\n\n${fb.areas_to_improve || ''}`,
+          status: fb.feedback_status?.toLowerCase() === 'acknowledged' ? 'acknowledged' : 'pending',
           employee: fb.employee_name || '',
           strengths: fb.strengths,
           areasToImprove: fb.areas_to_improve,
-          overallSentiment: fb.overall_sentiment?.toLowerCase()
+          overallSentiment: fb.overall_sentiment?.toLowerCase() as 'positive' | 'negative' | 'neutral'
         })));
       }
     } catch (error) {
@@ -80,7 +90,7 @@ const FeedbackReceived = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id, token, isEmployee]);
+  }, [user?.id, token, isEmployee, BACKEND_URL]);
 
   useEffect(() => {
     fetchFeedbackData();
@@ -95,7 +105,7 @@ const FeedbackReceived = () => {
       originalDate: feedback.date,
       strengths: feedback.strengths || '',
       areasToImprove: feedback.areasToImprove || '',
-      sentiment: (feedback.overallSentiment as 'positive' | 'neutral' | 'negative') || 'positive'
+      sentiment: feedback.overallSentiment || 'positive'
     });
   }, []);
 
@@ -134,7 +144,7 @@ const FeedbackReceived = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id, fetchFeedbackData, token]);
+  }, [user?.id, fetchFeedbackData, token, BACKEND_URL]);
   
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -301,10 +311,10 @@ const FeedbackReceived = () => {
           </>
         ) : (
           <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="text-center py-12">
-            <p className="text-gray-700 text-lg">You don't have any feedbacks to view</p>
+            <div className="text-center py-12">
+              <p className="text-gray-700 text-lg">You don&apos;t have any feedbacks to view</p>
+            </div>
           </div>
-        </div>
         )}
 
         {feedbackModal.isOpen && (

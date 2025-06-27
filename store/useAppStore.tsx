@@ -1,19 +1,42 @@
-// stores/useAppStore.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+interface User {
+  id: string;
+  full_name: string;
+  email: string;
+  company?: string;
+  department?: string;
+  managers?: Array<{ manager_name: string }>;
+  user_type?: 'manager' | 'employee';
+}
+
+interface AuthResponse {
+  user: User;
+  access_token: string;
+  user_type: 'manager' | 'employee';
+}
 
 interface AppState {
-  user: any;
+  user: User | null;
   token: string | null;
   userType: 'manager' | 'employee' | null;
   login: (email: string, password: string) => Promise<void>;
-  signup: (userData: any, isManager: boolean) => Promise<void>;
+  signup: (userData: SignupData, isManager: boolean) => Promise<void>;
   logout: () => void;
 }
+
+interface SignupData {
+  full_name: string;
+  email: string;
+  company: string;
+  department: string;
+  password: string;
+}
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -22,25 +45,40 @@ export const useAppStore = create<AppState>()(
       token: null,
       userType: null,
       login: async (email, password) => {
-        const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, password }),
-        });
+        try {
+          const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+          });
 
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.detail || 'Login failed');
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Login failed');
+          }
+
+          const data: AuthResponse = await response.json();
+          
+          set({ 
+            user: data.user, 
+            token: data.access_token,
+            userType: data.user_type 
+          });
+
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : 'Login failed', {
+            position: "top-center",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+          });
+          throw error;
         }
-
-        set({ 
-          user: data.user, 
-          token: data.access_token,
-          userType: data.user_type 
-        });
       },
       signup: async (userData, isManager) => {
         const endpoint = isManager 
@@ -56,23 +94,23 @@ export const useAppStore = create<AppState>()(
             body: JSON.stringify(userData),
           });
 
-          const data = await response.json();
-
           if (!response.ok) {
-            throw new Error(data.detail || 'Signup failed');
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Signup failed');
           }
 
+          const data: AuthResponse = await response.json();
+
           set({ 
-            user: data.user || data, 
-            token: data.access_token || null,
-            userType: isManager ? 'manager' : 'employee'
+            user: data.user, 
+            token: data.access_token,
+            userType: data.user_type
           });
 
           toast.success('Account created successfully! Please login to continue');
 
         } catch (error) {
-          // Show error toast if needed
-          toast.error('Signup failed', {
+          toast.error(error instanceof Error ? error.message : 'Signup failed', {
             position: "top-center",
             autoClose: 5000,
             hideProgressBar: false,
@@ -85,11 +123,21 @@ export const useAppStore = create<AppState>()(
         }
       },
       logout: () => {
-        set({ user: null, token: null });
+        set({ 
+          user: null, 
+          token: null,
+          userType: null 
+        });
+        toast.success('Logged out successfully');
       },
     }),
     {
       name: 'app-storage',
+      partialize: (state) => ({ 
+        token: state.token,
+        user: state.user,
+        userType: state.userType
+      }),
     }
   )
 );

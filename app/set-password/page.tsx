@@ -43,8 +43,12 @@ export default function SetPassword() {
       if (response.data.success) {
         setSuccess(true);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to set password');
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.detail || 'Failed to set password');
+      } else {
+        setError('An unexpected error occurred');
+      }
     } finally {
       setLoading(false);
     }
