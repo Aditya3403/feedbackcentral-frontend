@@ -26,7 +26,6 @@ const SideBar = () => {
     return initials;
   };
 
-  // Navigation items with consistent icon sizing
   const navItems = [
     {
       label: "Home",
@@ -75,9 +74,7 @@ const SideBar = () => {
       }}
     >
       <div className="flex flex-col h-full justify-between">
-        {/* Top section with logo and navigation */}
         <div className="p-4 flex-1 overflow-y-auto">
-          {/* Logo and collapse button */}
           <div
             className={`mb-6 flex items-center ${
               sidebarCollapsed ? "justify-center" : "justify-between"
@@ -108,7 +105,6 @@ const SideBar = () => {
             )}
           </div>
 
-          {/* Navigation links with consistent icon sizing */}
           <nav className="flex flex-col space-y-1">
             {navItems.map((item) => (
               <div key={item.label}>
@@ -169,7 +165,6 @@ const SideBar = () => {
           </nav>
         </div>
 
-        {/* User info section at bottom */}
         <div className="border-t border-gray-300 dark:border-gray-700 relative">
           {!sidebarCollapsed ? (
             <>
@@ -195,7 +190,6 @@ const SideBar = () => {
                 <ChevronUp className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* User dropdown menu */}
               {userMenuOpen && (
                 <div className="absolute bottom-full left-0 right-0 mb-1 mx-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-10">
                   <div className="p-4 border-b border-gray-200 dark:border-gray-700">
